@@ -1,3 +1,14 @@
+# ═══════════════════════════════════════════════════════════════════
+#  CI — Phase 0 gates 1, 2, 3 and 5 (AGENTS.md §4)
+#
+#  Gate 1:  formatting verified in CI (fails if anything is unformatted)
+#  Gate 2:  tests run on the path CI actually executes
+#  Gate 3:  strict static analysis, zero warnings
+#  Gate 5:  every action pinned to a full commit SHA
+#
+#  This is the template every new project is born from. A gate missing
+#  here is a gate missing in every project that copies it.
+# ═══════════════════════════════════════════════════════════════════
 name: CI
 
 on:
@@ -6,39 +17,161 @@ on:
   pull_request:
     branches: [main]
 
+# Least privilege by default. A job needing more declares it itself.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned so CI reproduces what runs locally. Bump it deliberately, not
+  # by drift: a floating channel can turn the build red with no change of
+  # ours, and then CI stops meaning "this works".
+  FLUTTER_VERSION: '3.41.7'
+
 jobs:
+  # ─── Is there a Flutter project here yet? ───
+  # This repository is a template: it ships rules and documentation, not an
+  # app, so there is no pubspec.yaml until someone creates a project from
+  # it. Running `flutter pub get` against no project fails — which is why
+  # this CI was red on main and blocked nothing.
+  #
+  # The Flutter jobs below skip while the repository is still just the
+  # template, and start working by themselves the moment a real project
+  # adds its pubspec.yaml. Same workflow, no edits needed downstream.
+  detect:
+    name: 'Detect Flutter project'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      is_flutter: ${{ steps.check.outputs.is_flutter }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Look for pubspec.yaml
+        id: check
+        run: |
+          if [ -f pubspec.yaml ]; then
+            echo "is_flutter=true" >> "$GITHUB_OUTPUT"
+            echo "Flutter project found. Gates 1, 2 and 3 will run."
+          else
+            echo "is_flutter=false" >> "$GITHUB_OUTPUT"
+            echo "No pubspec.yaml: this is still the bare template."
+            echo "Gates 1, 2 and 3 skip. Gates 5 and 17 always run."
+          fi
+
+  # ─── GATES 1 and 3 · Formatting and static analysis ───
   analyze:
-    name: Flutter Analyze
+    name: 'Gates 1 & 3 · Format and analyze'
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    timeout-minutes: 15
+    needs: detect
+    if: needs.detect.outputs.is_flutter == 'true'
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          flutter-version: '3.24.0'
+          # This job never pushes; do not leave the git token on the runner.
+          persist-credentials: false
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: 'stable'
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Analyze code
-        run: flutter analyze --no-fatal-infos
+      # GATE 1. Without --set-exit-if-changed the formatter reports and
+      # exits green: the gate looks configured and blocks nothing.
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
 
+      # GATE 3. No --no-fatal-infos: tolerated warnings pile up until they
+      # are invisible. Zero, or the gate does not exist.
+      - name: Analyze
+        run: flutter analyze
+
+  # ─── GATE 2 · Tests on the path CI really runs ───
   test:
-    name: Flutter Test
+    name: 'Gate 2 · Tests'
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    timeout-minutes: 20
+    needs: detect
+    if: needs.detect.outputs.is_flutter == 'true'
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          flutter-version: '3.24.0'
+          persist-credentials: false
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: 'stable'
 
       - name: Install dependencies
         run: flutter pub get
 
+      # Whole `test/` directory on purpose. Naming subdirectories here is
+      # how tests end up living somewhere CI never looks: they pass
+      # locally, give a feeling of coverage and protect nothing.
       - name: Run tests
         run: flutter test
+
+  # ─── GATE 5 · Actions pinned by SHA ───
+  # A tag like @v6 is mutable: whoever controls that repository can change
+  # what runs inside this CI, with access to its secrets. This job is the
+  # verifier that stops the pinning from rotting back to tags.
+  pinning:
+    name: 'Gate 5 · Actions pinned by SHA'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Verify every action is pinned to a full commit SHA
+        run: |
+          set -uo pipefail
+          failed=0
+
+          while IFS= read -r entry; do
+            file="${entry%%:*}"
+            ref="${entry#*uses:}"
+            # Strip whitespace, quotes and inline comments
+            ref="$(printf '%s' "$ref" | sed 's/#.*//' | tr -d " \"'\r")"
+
+            [ -z "$ref" ] && continue
+            # Local actions (./path) need no pinning
+            case "$ref" in ./*) continue ;; esac
+
+            if printf '%s' "$ref" | grep -qE '@[0-9a-f]{40}$'; then
+              echo "  ok   $ref"
+            else
+              echo "::error file=$file::Action not pinned to a full commit SHA: $ref"
+              failed=1
+            fi
+          done < <(grep -rnE '^[[:space:]]*-?[[:space:]]*uses:[[:space:]]' .github/workflows/ || true)
+
+          if [ "$failed" -ne 0 ]; then
+            echo ""
+            echo "Pin every action to its full 40-character commit SHA."
+            echo "Get it with: gh api repos/OWNER/REPO/commits/TAG --jq .sha"
+            exit 1
+          fi
+          echo ""
+          echo "OK: every action is pinned to a full commit SHA."

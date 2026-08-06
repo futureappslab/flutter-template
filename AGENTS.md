@@ -295,6 +295,12 @@ _(Escribe aquí las reglas que salen de tus respuestas, en imperativo y verifica
 | 14 | Respaldo automático y cifrado de la base de datos |
 | 15 | Vigilante contra la pausa por inactividad |
 | 16 | Vigilante de la rama principal (falla si llega un commit sin PR) |
+| 17 | Auditoría de los **propios workflows de CI** (permisos excesivos, inyección, acciones sin anclar) |
+
+> ⚠️ **Los gates 14 y 15 aplican a cualquier base de datos en plan gratuito**, no solo a proyectos
+> críticos: los planes gratuitos suelen **pausarse por inactividad** y **no incluir respaldos**. Sin
+> estos dos gates, un descuido de una semana deja el servicio caído y un borrado accidental es
+> irreversible.
 
 > 🚪 **Puerta de salida:** provocar 3 fallos a propósito —formato sucio, test roto, secreto falso— y
 > **comprobar que el CI los rechaza**. Un control que nunca bloqueó nada está *configurado*, no

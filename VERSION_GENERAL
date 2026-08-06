@@ -13,6 +13,14 @@
 # Si coinciden -> NO se lee nada de la fuente (cero tokens).
 # Si difieren  -> se lee SOLO el CHANGELOG.md de la fuente.
 
-VERSION: 1.1.0
-COMMIT: e152853455f0d0a5b16abf869f1862b2754418b0
+VERSION: 1.2.0
+COMMIT: a056c19a0b1b73e4f12757e6d670eee8cc2d81e0
 FECHA_ADOPCION: 2026-08-06
+
+# Gates que esta plantilla ya trae montados:
+#   · gates 1, 2, 3 y 5  -> .github/workflows/ci.yml
+#   · gate 17            -> .github/workflows/workflow-audit.yml
+#
+# Gates que cada proyecto debe montar segun lo que use:
+#   · gates 4, 6      -> escaneo de secretos y de dependencias
+#   · gates 7 a 16    -> hooks, base de datos, CODEOWNERS, respaldo, anti-pausa

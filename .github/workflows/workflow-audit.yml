@@ -1,0 +1,41 @@
+# ═══════════════════════════════════════════════════════════════════
+#  WORKFLOW AUDIT — Phase 0 gate 17 (AGENTS.md §4)
+#
+#  Every other gate watches the code. This one watches the gates.
+#  CI runs with every secret the repository holds, so a workflow with
+#  permissions it does not need, or one that interpolates external text
+#  straight into a `run` block, is the most direct way in there is.
+# ═══════════════════════════════════════════════════════════════════
+name: Workflow audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  zizmor:
+    name: 'Gate 17 · Workflow security audit'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          # This job never pushes; do not leave the git token on the runner.
+          persist-credentials: false
+
+      # Pinned to an exact version so results are reproducible: a floating
+      # release could turn the build red with no change of ours.
+      # --min-severity=high fails on high-severity findings and reports the
+      # lower-confidence ones without blocking.
+      - name: Run zizmor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: pipx run zizmor==1.28.0 --min-severity=high .github/workflows/
