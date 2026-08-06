@@ -32,11 +32,47 @@ env:
   FLUTTER_VERSION: '3.41.7'
 
 jobs:
+  # ─── Is there a Flutter project here yet? ───
+  # This repository is a template: it ships rules and documentation, not an
+  # app, so there is no pubspec.yaml until someone creates a project from
+  # it. Running `flutter pub get` against no project fails — which is why
+  # this CI was red on main and blocked nothing.
+  #
+  # The Flutter jobs below skip while the repository is still just the
+  # template, and start working by themselves the moment a real project
+  # adds its pubspec.yaml. Same workflow, no edits needed downstream.
+  detect:
+    name: 'Detect Flutter project'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      is_flutter: ${{ steps.check.outputs.is_flutter }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Look for pubspec.yaml
+        id: check
+        run: |
+          if [ -f pubspec.yaml ]; then
+            echo "is_flutter=true" >> "$GITHUB_OUTPUT"
+            echo "Flutter project found. Gates 1, 2 and 3 will run."
+          else
+            echo "is_flutter=false" >> "$GITHUB_OUTPUT"
+            echo "No pubspec.yaml: this is still the bare template."
+            echo "Gates 1, 2 and 3 skip. Gates 5 and 17 always run."
+          fi
+
   # ─── GATES 1 and 3 · Formatting and static analysis ───
   analyze:
     name: 'Gates 1 & 3 · Format and analyze'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: detect
+    if: needs.detect.outputs.is_flutter == 'true'
 
     steps:
       - name: Check out repository
@@ -69,6 +105,8 @@ jobs:
     name: 'Gate 2 · Tests'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    needs: detect
+    if: needs.detect.outputs.is_flutter == 'true'
 
     steps:
       - name: Check out repository
