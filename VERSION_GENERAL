@@ -1,0 +1,18 @@
+# Versión de las instrucciones generales que trae esta plantilla.
+#
+# Al crear un proyecto desde aquí, clona también el repositorio de
+# instrucciones generales COMO CARPETA HERMANA:
+#
+#   mi-carpeta/
+#     ├── instrucciones-generales/   <- git clone
+#     └── mi-proyecto-nuevo/         <- creado desde esta plantilla
+#
+# Después, al iniciar cada jornada:
+#   powershell -File ../instrucciones-generales/check-version.ps1
+#
+# Si coinciden -> NO se lee nada de la fuente (cero tokens).
+# Si difieren  -> se lee SOLO el CHANGELOG.md de la fuente.
+
+VERSION: 1.1.0
+COMMIT: e152853455f0d0a5b16abf869f1862b2754418b0
+FECHA_ADOPCION: 2026-08-06
