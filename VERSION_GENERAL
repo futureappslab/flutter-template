@@ -13,9 +13,9 @@
 # Si coinciden -> NO se lee nada de la fuente (cero tokens).
 # Si difieren  -> se lee SOLO el CHANGELOG.md de la fuente.
 
-VERSION: 1.2.0
-COMMIT: a056c19a0b1b73e4f12757e6d670eee8cc2d81e0
-FECHA_ADOPCION: 2026-08-06
+VERSION: 1.3.0
+COMMIT: 250c816783bc576a13669564a9c04b816923c980
+FECHA_ADOPCION: 2026-08-07
 
 # Gates que esta plantilla ya trae montados:
 #   · gates 1, 2, 3 y 5  -> .github/workflows/ci.yml
