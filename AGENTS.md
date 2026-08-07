@@ -106,6 +106,19 @@ Este documento tiene **dos tipos de secciones**:
 5. 🚨 **STOP-THE-LINE:** ante cualquier error o advertencia, detenerse. Corregirlo es la tarea de
    máxima prioridad. Prohibido decir "lo arreglamos después".
 
+### Manejo de secretos — las tres reglas del traslado
+
+6. **Antes de pedir un secreto, el agente dice tres cosas:** dónde va exactamente (dirección y nombre
+   del campo) · si se conserva o se desecha · qué pasa si se pierde. **Prohibido decir "crea un
+   secreto" sin decir dónde termina** — un secreto sin destino claro acaba en un archivo de texto.
+7. **Un secreto se copia y se pega directo en su destino.** Nunca pasa por un editor de texto, ni
+   "un momento", ni "por si se me olvida": los editores modernos **guardan solos** y el *deshacer*
+   resucita lo borrado.
+8. **La pregunta que decide si se anota: ¿se puede volver a crear?**
+   · **Sí** → se pega y se olvida. **Anotarlo es solo riesgo, sin beneficio.**
+   · **No** → se anota **fuera del computador**, y se dice explícitamente por qué esa no se puede
+   perder.
+
 ## 2.2 Fuente única de reglas
 
 `AGENTS.md` es la única fuente. `CLAUDE.md` solo contiene `@AGENTS.md`. **Las reglas no se duplican.**
@@ -138,8 +151,10 @@ sesión. **No re-auditar** lo marcado como HECHO. Escribirlo para un desconocido
 4. **Nunca commits directos a la rama principal.** Usar `feat/`, `fix/`, `docs/`, `refactor/`,
    `chore/`, `ci/`, `test/`.
 5. **Commits convencionales** en inglés: `tipo(alcance): descripción`.
-6. **El agente crea el PR y lo gestiona**, y fusiona a mano con los checks verdes.
-7. **Profesionalismo sobre velocidad.** Prohibido saltarse pasos por "eficiencia". Sin excepciones.
+6. **`push` a la rama propia es respaldo, no publicación — hacerlo seguido.** Lo que se hace **una
+   sola vez, al cerrar el tema**, es el PR. Un commit sin push vive en un solo disco duro.
+7. **El agente crea el PR y lo gestiona**, y fusiona a mano con los checks verdes.
+8. **Profesionalismo sobre velocidad.** Prohibido saltarse pasos por "eficiencia". Sin excepciones.
 
 **Palabra clave `enterprise`:** el usuario autoriza continuar con la recomendación profesional sin
 aprobación paso a paso. **No elimina la validación local ni STOP-THE-LINE.**
